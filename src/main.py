@@ -83,6 +83,7 @@ async def main():
             break
 
         messages.append({"role": "user", "content": user_input})
+        snapshot = len(messages)
         partial: list = []
         _active_task = asyncio.create_task(_respond(messages, partial))
         try:
@@ -90,6 +91,8 @@ async def main():
             print()
         except asyncio.CancelledError:
             print("\n  ✗ Cancelled")
+            # Roll back any orphaned tool_calls/tool_results appended mid-call
+            del messages[snapshot:]
             text = "".join(partial) + " [interrupted]" if partial else "[interrupted]"
             messages.append({"role": "assistant", "content": text})
         finally:

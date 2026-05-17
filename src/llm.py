@@ -18,10 +18,16 @@ _log_dir = Path(__file__).parent.parent / "logs"
 _log_dir.mkdir(exist_ok=True)
 _tool_logger = logging.getLogger("tool_calls")
 _tool_logger.setLevel(logging.DEBUG)
-_tool_logger.addHandler(logging.FileHandler(_log_dir / "tool_calls.log"))
+_handler = logging.FileHandler(_log_dir / "tool_calls.log")
+_handler.setFormatter(logging.Formatter("%(asctime)s  %(levelname)-5s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+_tool_logger.addHandler(_handler)
 
 SYSTEM_PROMPT = """You are a focused assistant with two tools: get_weather and research_topic.
-Only answer questions that use one of these tools. For anything else, politely say you can only help with weather lookups and topic research."""
+Only answer questions that use one of these tools. For anything else, politely say you can only help with weather lookups and topic research.
+
+Important: only use information returned by the tools. Do not supplement with your own knowledge.
+If a research summary looks like a placeholder (e.g. generic text with no real content), tell the user the API did not return useful results rather than making anything up.
+If a result is marked as cached and potentially outdated, flag that to the user."""
 
 TOOLS = [
     {
