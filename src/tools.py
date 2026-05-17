@@ -13,7 +13,7 @@ async def _get(endpoint: str, params: dict) -> dict:
                 f"{BASE_URL}{endpoint}",
                 headers={"X-API-Key": os.environ["ELYOS_API_KEY"]},
                 params=params,
-                timeout=12.0,
+                timeout=10.0,
             )
             if r.status_code == 404:
                 raise ValueError(r.json().get("error", "Not found"))
@@ -28,6 +28,12 @@ async def _get(endpoint: str, params: dict) -> dict:
             return body
 
     raise RuntimeError("Still rate limited after retries")
+
+
+TOOL_SUMMARIES = {
+    "get_weather": lambda args: f"Getting weather for {args.get('location', '')}...",
+    "research_topic": lambda args: f"Researching {args.get('topic', '')}...",
+}
 
 
 async def get_weather(location: str) -> dict:

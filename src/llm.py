@@ -10,7 +10,7 @@ import litellm
 
 litellm.suppress_debug_info = True
 
-from tools import get_weather, research_topic
+from tools import TOOL_SUMMARIES, get_weather, research_topic
 
 MODEL = os.environ.get("ANTHROPIC_MODEL", "anthropic/claude-haiku-4-5-20251001")
 
@@ -112,7 +112,8 @@ async def call_llm(messages: list):
         # Execute tools and append results before next LLM turn
         for tc in tool_calls_acc.values():
             args = json.loads(tc["args"])
-            yield {"event": "tool_start", "name": tc["name"], "args": args}
+            summary = TOOL_SUMMARIES.get(tc["name"], lambda a: f"Running {tc['name']}...")(args)
+            yield {"event": "tool_start", "name": tc["name"], "args": args, "summary": summary}
             _tool_logger.info("call  %s %s", tc["name"], json.dumps(args))
             error: str | None = None
             try:

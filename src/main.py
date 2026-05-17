@@ -42,13 +42,8 @@ async def _respond(messages: list, partial: list):
                 partial.append(item)
             elif item["event"] == "tool_start":
                 clear_spinner()
-                partial.clear()  # tool call starting — reset partial text window
-                name, args = item["name"], item["args"]
-                if name == "research_topic":
-                    label = f"Researching {args.get('topic', '')}..."
-                else:
-                    label = f"Getting weather for {args.get('location', '')}..."
-                spin = asyncio.create_task(_spinner(f"{label} (Ctrl+C to cancel)"))
+                partial.clear()  # tool call starting, clear any preamble text (e.g. "Let me check that for you...")
+                spin = asyncio.create_task(_spinner(f"{item['summary']} (Ctrl+C to cancel)"))
             elif item["event"] == "tool_done":
                 clear_spinner()
                 if item.get("error"):
@@ -63,6 +58,7 @@ async def main():
     global _active_task
 
     def on_sigint():
+        # Handle Ctrl+C
         if _active_task and not _active_task.done():
             _active_task.cancel()
         else:
@@ -83,12 +79,10 @@ async def main():
 
         if not user_input:
             continue
-        if user_input.lower() in ("quit", "exit", "q"):
+        if user_input.lower() == "quit":
             break
 
         messages.append({"role": "user", "content": user_input})
-        snapshot = len(messages)
-
         partial: list = []
         _active_task = asyncio.create_task(_respond(messages, partial))
         try:
@@ -96,11 +90,8 @@ async def main():
             print()
         except asyncio.CancelledError:
             print("\n  ✗ Cancelled")
-            if partial:
-                # preserve what was said before the interrupt
-                messages.append({"role": "assistant", "content": "".join(partial) + " [interrupted]"})
-            else:
-                del messages[snapshot - 1:]
+            text = "".join(partial) + " [interrupted]" if partial else "[interrupted]"
+            messages.append({"role": "assistant", "content": text})
         finally:
             _active_task = None
 
